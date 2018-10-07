@@ -34,8 +34,8 @@
         _Scene_Menu_Base.call(this);
         this.createCommandWindow();
         this.createGoldWindow();
-        this.createStatusWindow();
         this.createMapNameWindow();
+        this.createStatusWindow();
 
         this._statusWindow.x = 0;
 
@@ -54,6 +54,51 @@
 //
 // The window for displaying party status.
 //-----------------------------------------------------------------------------
+    /*
+    function Window_MenuStatus() {
+        this.initialize.apply(this, arguments);
+    }
+
+    Window_MenuStatus.prototype = Object.create(Window_Selectable.prototype);
+    Window_MenuStatus.prototype.constructor = Window_MenuStatus;
+    */
+    Window_MenuStatus.prototype.initialize = function(x, y) {
+        var width = this.windowWidth();
+        var height = this.windowHeight();
+        var self = this;
+        this._frames = [130, 65, 0];
+        this._counter = 0;
+        Window_Selectable.prototype.initialize.call(this, x, y, width, height);
+        this._formationMode = false;
+        this._pendingIndex = -1;
+
+        // frames used to animate battles in the main menu.
+        this.refresh();
+        
+
+        // set interval to animate
+        setInterval( function() {  
+             
+            if ( self._counter == 2 ) {
+                self._frames = self._frames.reverse();
+                self._counter = 0;
+                console.log( self._frames );
+                console.log( self._counter);
+                console.log('inside');
+            }
+            
+            self.refresh();
+            //self._frames.splice(-1,1);
+            self._counter++;
+        }, 175);
+        
+    };
+    
+    
+
+    Window_MenuStatus.prototype.windowWidth = function() {
+        return Graphics.boxWidth - 240;
+    };
 
     /**
      * Create Status Window
@@ -63,6 +108,38 @@
         this._statusWindow.reserveFaceImages();
         this.addWindow(this._statusWindow);
     };
+    /**
+     * Load and cache battler spreadsheet for each party member,
+     * so they are later displayed on the menu.
+     */
+    Scene_Menu.prototype.getBattlerSprites = function() { 
+        var battlerSprites = [];
+        $gameParty.members().forEach(function(actor) {
+           battlerSprites[actor._actorId] = ImageManager.reserveSvActor(actor._battlerName);
+        }, this);
+        return battlerSprites;
+    }
+
+    Window_MenuStatus.prototype.refresh = function() {
+        console.log( 'this it refresh' );
+        if (this.contents) {
+            this.contents.clear();
+            this.drawAllItems();
+        }
+    };
+
+    // add parameter to animate battlers.
+    /*
+    Window_MenuStatus.prototype.drawAllItems = function() {
+        var topIndex = this.topIndex();
+        for (var i = 0; i < this.maxPageItems(); i++) {
+            var index = topIndex + i;
+            if (index < this.maxItems()) {
+                this.drawItem(index);
+            }
+        }
+    };
+    */
 
     /**
      * Set Status window height according to party members.
@@ -86,8 +163,9 @@
     Window_MenuStatus.prototype.drawItem = function(index) {
         this.drawItemBackground(index);
         // this.drawItemImage(index);
-        this.drawActorDataColOne(index);
+        this.drawActorDataColOne(index, frames);
         //this.drawItemStatus(index);
+
     };
     
     Window_MenuStatus.prototype.drawItemBackground = function(index) {
@@ -106,18 +184,14 @@
     Window_MenuStatus.prototype.drawActorDataColOne = function(index) {
         var actor = $gameParty.members()[index];
         var rect = this.itemRectForText(index);
-        var frames = [4, 70, 140, 270];
-        console.log( Sprite_Actor );
-        console.log(rect);
+        console.log( this._counter );
         console.log(actor);
         this.resetTextColor();
         this.drawText(actor._name, rect.y, rect.x - 10, 130, 'center' );
         this.drawActorIcons(actor, rect.y, rect.x + 20, 130 );
         var battlerSprite = ImageManager.loadSvActor(actor._battlerName);
-        this.contents.blt(battlerSprite, 4, 4, 60, 60, rect.x = 40, rect.y + 50);
-        // TODO: Animate sprite here. Probably need to load an spreadsheet first and loop over it.
-        console.log(battlerSprite);
-        // this.drawAnimatedActorSprite(battlerSprite, frames, rext);
+
+        this.contents.blt(battlerSprite, this._frames[this._counter], 0, 65, 65, rect.x + 40, rect.y + 50);
         
     }
 
