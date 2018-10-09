@@ -16,18 +16,6 @@
     var _Scene_Menu_Base = Scene_MenuBase.prototype.create;
 
     /**
-     * Sleep Implementation in JS
-     */
-    var sleepTime = function sleep(milliseconds) {
-        var start = new Date().getTime();
-        for (var i = 0; i < 1e7; i++) {
-          if ((new Date().getTime() - start) > milliseconds){
-            break;
-          }
-        }
-      }
-
-    /**
      * Init Menu and set windows.
      */
     Scene_Menu.prototype.create = function() {
@@ -48,6 +36,37 @@
 
         
     };
+
+//-----------------------------------------------------------------------------
+// Windows Base
+//
+// Super class for all menu windows
+// Extended and new methods added below here to enhance funcionality
+//-----------------------------------------------------------------------------
+
+/**
+ *  Custom method to update font size with ease.
+ * @param {string} fontSize 
+ */
+Window_Base.prototype.setFontSize = function(fontSize) {
+    this.contents.fontSize = fontSize;
+};
+
+/**
+* Calculate actor Exp Rate
+*/
+Window_Base.prototype.calculateActorExpRate = function(actor) {
+    var actorNextLevel = actor._level + 1;
+
+    if ( actorNextLevel > 99 ) {
+        actorNextLevel = 99;
+    }
+
+    var totalExpRequired = actor.expForLevel(actorNextLevel) - actor.expForLevel(actor._level);
+    var ratio =  ( totalExpRequired - actor.nextRequiredExp() ) / totalExpRequired
+
+    return ( Number(ratio.toFixed(18)));
+}
 
 //-----------------------------------------------------------------------------
 // Status Window
@@ -75,29 +94,15 @@
         // frames used to animate battles in the main menu.
         this.refresh();
         
-
-        // set interval to animate
-        setInterval( function() {  
-             
+        // set interval to animate actors in Main Menu.
+        setInterval( function() {               
             if ( self._counter == 2 ) {
                 self._frames = self._frames.reverse();
                 self._counter = 0;
-                console.log( self._frames );
-                console.log( self._counter);
-                console.log('inside');
             }
-            
             self.refresh();
-            //self._frames.splice(-1,1);
             self._counter++;
-        }, 175);
-        
-    };
-    
-    
-
-    Window_MenuStatus.prototype.windowWidth = function() {
-        return Graphics.boxWidth - 240;
+        }, 175);    
     };
 
     /**
@@ -108,38 +113,6 @@
         this._statusWindow.reserveFaceImages();
         this.addWindow(this._statusWindow);
     };
-    /**
-     * Load and cache battler spreadsheet for each party member,
-     * so they are later displayed on the menu.
-     */
-    Scene_Menu.prototype.getBattlerSprites = function() { 
-        var battlerSprites = [];
-        $gameParty.members().forEach(function(actor) {
-           battlerSprites[actor._actorId] = ImageManager.reserveSvActor(actor._battlerName);
-        }, this);
-        return battlerSprites;
-    }
-
-    Window_MenuStatus.prototype.refresh = function() {
-        console.log( 'this it refresh' );
-        if (this.contents) {
-            this.contents.clear();
-            this.drawAllItems();
-        }
-    };
-
-    // add parameter to animate battlers.
-    /*
-    Window_MenuStatus.prototype.drawAllItems = function() {
-        var topIndex = this.topIndex();
-        for (var i = 0; i < this.maxPageItems(); i++) {
-            var index = topIndex + i;
-            if (index < this.maxItems()) {
-                this.drawItem(index);
-            }
-        }
-    };
-    */
 
     /**
      * Set Status window height according to party members.
@@ -163,7 +136,8 @@
     Window_MenuStatus.prototype.drawItem = function(index) {
         this.drawItemBackground(index);
         // this.drawItemImage(index);
-        this.drawActorDataColOne(index, frames);
+        this.drawActorDataColOne(index);
+        //this.drawActorDataColTwo(index);
         //this.drawItemStatus(index);
 
     };
@@ -184,29 +158,140 @@
     Window_MenuStatus.prototype.drawActorDataColOne = function(index) {
         var actor = $gameParty.members()[index];
         var rect = this.itemRectForText(index);
-        console.log( this._counter );
-        console.log(actor);
-        this.resetTextColor();
-        this.drawText(actor._name, rect.y, rect.x - 10, 130, 'center' );
-        this.drawActorIcons(actor, rect.y, rect.x + 20, 130 );
-        var battlerSprite = ImageManager.loadSvActor(actor._battlerName);
 
+        // draw actor name.
+        this.resetTextColor();
+        this.drawText(actor._name, rect.x, rect.y, 130, 'center' );
+        this.drawActorIcons(actor, rect.x, rect.y + 30, 130 );
+        
+        // draw actor battle sprite
+        var battlerSprite = ImageManager.loadSvActor(actor._battlerName);
+        // this_frames and this._counter are updated in every window refresh.
         this.contents.blt(battlerSprite, this._frames[this._counter], 0, 65, 65, rect.x + 40, rect.y + 50);
+        
+        // draw actor class.
+        this.setFontSize(22);
+        this.drawText(actor.currentClass().name, rect.x + 160, rect.y, 130 );
+        this.resetFontSettings();
+
+        // draw actor Vit numbers and gauge.
+        this.drawActorHp(actor, rect.x + 160, rect.y + 30, 150);
+
+        // draw actor Mp numbers and gauge.
+        this.drawActorMp(actor, rect.x + 160, rect.y + 75, 150);
+
+        // draw actor Lv text and number.
+        this.drawActorLevel(actor, rect.x + 400, rect.y + 29 );
+
+        // draw actor Exp. gauge.
+        //this.drawGauge(rect.x + 400, rect.y + 75, 150, actorExpRate, this.mpGaugeColor1(), this.mpGaugeColor2() );
+        this.drawActorExpGauge(actor, rect.x + 400, rect.y + 75, 150);
+
         
     }
 
     /**
-     * Draws animated actor sprite
+     * Calculate actor Exp Rate
      */
-    Window_MenuStatus.prototype.drawAnimatedActorSprite = function(battlerBitMap, frames, rect) {
-            var self = this;
-            setInterval(function(j) {
-                for(var i = 0; i < frames.length; i++) {
-                    self.contents.blt(battlerBitMap, frames[i], 4, 60, 60, rect.x = 40, rect.y + 50);
-                    sleepTime(500);
-                }
-            }, 2000);
+    
+
+    /**
+     * Increase Gauge Height and add optional height parameter.
+     */
+    Window_MenuStatus.prototype.drawGauge = function(x, y, width, rate, color1, color2, height) {
+        var height = height || 10;
+        var fillW = Math.floor(width * rate);
+        var gaugeY = y + this.lineHeight() - 8;
+        this.contents.fillRect(x, gaugeY, width, height, this.gaugeBackColor());
+        this.contents.gradientFillRect(x, gaugeY, fillW, height, color1, color2);
+    };
+
+    /**
+     * Draw Exp Gauge
+     */
+    Window_MenuStatus.prototype.drawActorExpGauge = function(actor, x, y, width) {
+        width = width || 186;
+        var color1 = this.mpGaugeColor1();
+        var color2 = this.mpGaugeColor2();
+        var actorNextLevel = actor._level + 1;
+        var actorExpRate = this.calculateActorExpRate(actor);
+
+        if ( actorNextLevel > 99 ) {
+            actorNextLevel = 99;
+        }
+
+        var totalExpRequired = actor.expForLevel(actorNextLevel) - actor.expForLevel(actor._level);
+        var currentExp = totalExpRequired - actor.nextRequiredExp();
+
+        console.log( color1 );
+        console.log( color2 );
+        console.log( currentExp );
+        console.log( totalExpRequired );
+
+        this.drawGauge(x, y, width, actorExpRate, color1, color2);
+        this.changeTextColor(this.systemColor());
+        this.setFontSize(15);
+        this.drawText(TextManager.expA, x, y, 44);
+        this.resetFontSettings();
+        this.drawCurrentAndMaxExp(currentExp, totalExpRequired, x, y, width,
+                               this.hpColor(actor), this.normalColor());
+    };
+
+
+    /**
+     * Remove condition to draw current Vit / max Vit in Status Window.
+     * Used to draw current / max for both Vit and Mp
+     */
+    Window_MenuStatus.prototype.drawCurrentAndMax = function(current, max, x, y, width, color1, color2) {
+        var labelWidth = this.textWidth('HP');
+        var valueWidth = this.textWidth('0000');
+        var slashWidth = this.textWidth('/');
+        var x1 = x + width - valueWidth;
+        var x2 = x1 - slashWidth;
+        var x3 = x2 - valueWidth;
+
+        this.setFontSize(20);
+        this.changeTextColor(color1);
+        this.drawText(current, x3 + 28, y, valueWidth, 'right');
+        this.changeTextColor(color2);
+        this.drawText(' / ', x2 + 28, y, slashWidth, 'right');
+        this.drawText(max, x1, y, valueWidth, 'right');
+        this.resetFontSettings();
+    };
+
+    /**
+     * Draw current Exp, max exp above the exp gauge
+     * TODO: Fix width issue - adap numbers width and recalculate x dinamically
+     */
+    Window_MenuStatus.prototype.drawCurrentAndMaxExp = function(current, max, x, y, width, color1, color2) {
+        var labelWidth = this.textWidth('HP');
+        var valueWidth = this.textWidth('0000');
+        var slashWidth = this.textWidth('/');
+        var x1 = x + width - valueWidth;
+        var x2 = x1 - slashWidth;
+        var x3 = x2 - valueWidth;
+
+        this.setFontSize(15);
+        this.changeTextColor(color1);
+        this.drawText(current, x3, y, valueWidth, 'right');
+        this.changeTextColor(color2);
+        this.drawText(' / ', x2 + 5, y, slashWidth, 'right');
+        this.drawText(max, x1 - 19, y, valueWidth, 'right');
+        this.resetFontSettings();
     }
+
+    /**
+     * Change level position, update font size.
+     */
+    Window_Base.prototype.drawActorLevel = function(actor, x, y) {
+        this.changeTextColor(this.systemColor());
+        this.setFontSize(45);
+        this.drawText(TextManager.levelA, x, y + 4.6, 48);
+        this.resetTextColor();
+        this.setFontSize(60);
+        this.drawText(actor.level, x + 50, y, 46, 'left');
+        this.resetFontSettings();
+    };
     
     Window_MenuStatus.prototype.drawItemImage = function(index) {
         var actor = $gameParty.members()[index];
