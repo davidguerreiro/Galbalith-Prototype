@@ -184,7 +184,6 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         this.drawActorLevel(actor, rect.x + 400, rect.y + 29 );
 
         // draw actor Exp. gauge.
-        //this.drawGauge(rect.x + 400, rect.y + 75, 150, actorExpRate, this.mpGaugeColor1(), this.mpGaugeColor2() );
         this.drawActorExpGauge(actor, rect.x + 400, rect.y + 75, 150);
 
         
