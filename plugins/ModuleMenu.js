@@ -175,10 +175,10 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         this.resetFontSettings();
 
         // draw actor Vit numbers and gauge.
-        this.drawActorHp(actor, rect.x + 160, rect.y + 30, 150);
+        this.drawActorHp(actor, rect.x + 160, rect.y + 30, 180);
 
         // draw actor Mp numbers and gauge.
-        this.drawActorMp(actor, rect.x + 160, rect.y + 75, 150);
+        this.drawActorMp(actor, rect.x + 160, rect.y + 75, 180);
 
         // draw actor Lv text and number.
         this.drawActorLevel(actor, rect.x + 400, rect.y + 29 );
@@ -210,6 +210,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
      */
     Window_MenuStatus.prototype.drawActorExpGauge = function(actor, x, y, width) {
         width = width || 186;
+        var fontSize = 15;
         var color1 = this.mpGaugeColor1();
         var color2 = this.mpGaugeColor2();
         var actorNextLevel = actor._level + 1;
@@ -222,18 +223,23 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var totalExpRequired = actor.expForLevel(actorNextLevel) - actor.expForLevel(actor._level);
         var currentExp = totalExpRequired - actor.nextRequiredExp();
 
+        /*
         console.log( color1 );
         console.log( color2 );
         console.log( currentExp );
         console.log( totalExpRequired );
+        */
 
         this.drawGauge(x, y, width, actorExpRate, color1, color2);
         this.changeTextColor(this.systemColor());
-        this.setFontSize(15);
+        this.setFontSize(fontSize);
         this.drawText(TextManager.expA, x, y, 44);
         this.resetFontSettings();
+        /*
         this.drawCurrentAndMaxExp(currentExp, totalExpRequired, x, y, width,
                                this.hpColor(actor), this.normalColor());
+        */
+       this.drawCurrentAndMax(currentExp, totalExpRequired, x, y, width, this.hpColor(actor), this.normalColor(), fontSize);
     };
 
 
@@ -241,20 +247,55 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
      * Remove condition to draw current Vit / max Vit in Status Window.
      * Used to draw current / max for both Vit and Mp
      */
-    Window_MenuStatus.prototype.drawCurrentAndMax = function(current, max, x, y, width, color1, color2) {
-        var labelWidth = this.textWidth('HP');
-        var valueWidth = this.textWidth('0000');
+    Window_MenuStatus.prototype.drawCurrentAndMax = function(current, max, x, y, width, color1, color2, fontSize) {
+        /**
+         * Light ajust to y position.
+         * Done here to avoid extend custom drawHpGauge
+         * method to just change 1 pixel.
+         */
+        y--;
+        var fontSize = fontSize || 20;
+        var maxString = max.toString();
+        var currentString = max.toString();
+        var labelWidth = this.textWidth('Vit');
         var slashWidth = this.textWidth('/');
-        var x1 = x + width - valueWidth;
-        var x2 = x1 - slashWidth;
-        var x3 = x2 - valueWidth;
+        var currentValueWidth = this.textWidth(currentString);
+        var maxValueWidth = this.textWidth(maxString);
 
-        this.setFontSize(20);
+        // calculate x values.
+        var xMaxValue = x + width - labelWidth;
+
+        /**
+         * Reajust x position for <= 999
+         */
+        if ( maxString.length <= 3 ) {
+            xMaxValue = xMaxValue + ( ( 4 - maxString.length ) * 10);
+        }
+
+        var xSlashValue = xMaxValue - slashWidth;
+        /**
+         * Light 3px reajust for current value
+         * as '/' creates visual effect of impairing
+         * x positon.
+         */
+        var xCurrentValue = ( xSlashValue - currentValueWidth ) - 3;
+
+        /**
+         * Values above are set for Window
+         * Menu Status FontSize 20 or above
+         * Reajust values for exp gauge (which uses
+         * lower font size)
+         */
+        if ( fontSize < 20 ) {
+            xMaxValue = xMaxValue - 5;
+        }
+        
+        
+        this.setFontSize(fontSize);
         this.changeTextColor(color1);
-        this.drawText(current, x3 + 28, y, valueWidth, 'right');
-        this.changeTextColor(color2);
-        this.drawText(' / ', x2 + 28, y, slashWidth, 'right');
-        this.drawText(max, x1, y, valueWidth, 'right');
+        this.drawText(max, xMaxValue, y, maxValueWidth, 'left');
+        this.drawText('/', xSlashValue, y, slashWidth, 'left');
+        this.drawText(current, xCurrentValue, y, currentValueWidth, 'right');
         this.resetFontSettings();
     };
 
