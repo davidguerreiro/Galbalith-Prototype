@@ -181,7 +181,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         this.drawActorMp(actor, rect.x + 160, rect.y + 75, 180);
 
         // draw actor Lv text and number.
-        this.drawActorLevel(actor, rect.x + 400, rect.y + 29 );
+        this.drawActorLevel(actor, rect.x + 398, rect.y + 29 );
 
         // draw actor Exp. gauge.
         this.drawActorExpGauge(actor, rect.x + 400, rect.y + 75, 150);
@@ -300,8 +300,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     };
 
     /**
-     * Draw current Exp, max exp above the exp gauge
-     * TODO: Fix width issue - adap numbers width and recalculate x dinamically
+     * Draw current Exp, max exp above the exp gauge.
      */
     Window_MenuStatus.prototype.drawCurrentAndMaxExp = function(current, max, x, y, width, color1, color2) {
         var labelWidth = this.textWidth('HP');
@@ -323,7 +322,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     /**
      * Change level position, update font size.
      */
-    Window_Base.prototype.drawActorLevel = function(actor, x, y) {
+    Window_MenuStatus.prototype.drawActorLevel = function(actor, x, y) {
         this.changeTextColor(this.systemColor());
         this.setFontSize(45);
         this.drawText(TextManager.levelA, x, y + 4.6, 48);
