@@ -374,6 +374,8 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var self = this;
         var width = this.windowWidth();
         var height = this.windowHeight();
+        this._iconSprite = this.getIconSpriteSheet();
+        
         Window_Base.prototype.initialize.call(this, x, y, width, height);
         this.refresh();
 
@@ -381,6 +383,11 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         setInterval(function(){
             self.refresh();
         }, 1000);
+
+        // load icon spreadsheet into cache.
+        this._iconSprite.addLoadListener(function() {
+            this.refresh();
+        }.bind(this));
     };
 
 
@@ -411,10 +418,25 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     };
 
     /**
-     * Draw current gameplay time.
+     * Draw currency value, text
+     * and currency icon.
+     */
+    Window_Gold_Menu.prototype.drawCurrencyValue = function(value, unit, x, y, width) {
+        var unitWidth = Math.min(80, this.textWidth(unit));
+        this.resetTextColor();
+        this.contents.blt(this._iconSprite, 310, 291, 23, 22, x + 2, y + 6, 26, 25 );
+        this.drawText(value, x, y, width - unitWidth - 6, 'right');
+        this.changeTextColor(this.systemColor());
+        this.drawText(unit, x + width - unitWidth, y, unitWidth, 'right');
+    };
+
+    /**
+     * Draw current gameplay time
+     * and current time icon.
      */
     Window_Gold_Menu.prototype.drawCurrentGameplayTime = function( value, x, y, width) {
        this.resetTextColor();
+       this.contents.blt(this._iconSprite, 288, 264, 23, 22, x + 2, y + 6, 26, 25 );
        this.drawText(value, x, y, width, 'right');
     };
 
@@ -451,7 +473,6 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var x = this.textPadding();
         var width = this.contents.width - this.textPadding() * 2;
         this.contents.clear();
-        // this.drawCurrencyValue(this.value(), this.currencyUnit(), x, 0, width);
         this.drawCurrentMapName(x, 0, width);
     };
 
@@ -505,9 +526,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     Window_MainMenuCommand.prototype.constructor = Window_MainMenuCommand;
 
     Window_MainMenuCommand.prototype.initialize = function(x, y) {
-        var self = this;
         this._iconSprite = this.getIconSpriteSheet();
-
         /**
          * Load spreadsheet into cache and refresh window
          * once is loaded.
@@ -532,11 +551,13 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
 
     /**
      * Get IconSet Bitmap object to draw icons on
-     * commmand menu items
+     * commmand menu items. Window Base exteded so
+     * icon spreadsheet is available for all windows
+     * if required.
      * 
      * @return {Bitmap}
      */
-    Window_MainMenuCommand.prototype.getIconSpriteSheet = function() {
+    Window_Base.prototype.getIconSpriteSheet = function() {
         return ImageManager.loadSystem('IconSetOld');
     }
 
@@ -597,9 +618,9 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     Window_MainMenuCommand.prototype.drawItem = function(index) {
         var rect = this.itemRectForText(index);
         var align = this.itemTextAlign();
-        this.drawCommandIconSprite(rect.x, rect.y, this.commandName(index));
         this.resetTextColor();
         this.changePaintOpacity(this.isCommandEnabled(index));
+        this.drawCommandIconSprite(rect.x, rect.y, this.commandName(index));
         this.drawText(this.commandName(index), rect.x + 40, rect.y, rect.width, align);
     };
 
@@ -615,16 +636,39 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var alignY = 6;
         var alignX = 2;
         switch(commandName) {
-            case 'Objetos' :
+            case 'Objetos':
                 this.contents.blt(this._iconSprite, 0, 218, width, height, x + alignX, y + alignY, width + 3, height + 3 );
+                break;
+            case 'Equipo':
+                this.contents.blt(this._iconSprite, 95, 362, width, height, x + alignX, y + alignY, width + 3, height + 3 );
+                break;
+            case 'Magia':
+                this.contents.blt(this._iconSprite, 241.5, 145, width, height, x + alignX, y + alignY, width + 4, height + 3 );
+                break;
+            case 'Límites':
+                this.contents.blt(this._iconSprite, 73, 194, width, height, x + alignX, y + alignY, width + 3, height + 3 );
+                break;
+            case 'Estado':
+                this.contents.blt(this._iconSprite, 216, 194, width, height, x + alignX, y + alignY, width + 3, height + 3 );
+                break;
+            case 'Formación':
+                this.contents.blt(this._iconSprite, 97, 194, width, height, x + alignX, y + alignY, width + 7, height + 3 );
+                break;
+            case 'Misiones':
+                this.contents.blt(this._iconSprite, 145, 218, width, height, x + alignX, y + alignY, width + 3, height + 3 );
+                break;
+            case 'Opciones':
+                this.contents.blt(this._iconSprite, 145, 194, width, height, x + alignX, y + alignY, width + 7, height + 3 );
+                break;
+            case 'Guardar':
+                this.contents.blt(this._iconSprite, 312, 194, width, height, x + alignX, y + alignY, width + 3, height + 3 );
+                break;
+            case 'Salir':
+                this.contents.blt(this._iconSprite, 360, 192, width, height, x + alignX, y + alignY, width + 3, height + 3 );
                 break;
             default:
                 break;
         }
     }
-    
-    Window_MainMenuCommand.prototype.itemTextAlign = function() {
-        return 'left';
-    };
 
  })();
