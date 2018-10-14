@@ -103,6 +103,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
             self.refresh();
             self._counter++;
         }, 175);    
+        
     };
 
     /**
@@ -135,10 +136,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
      */
     Window_MenuStatus.prototype.drawItem = function(index) {
         this.drawItemBackground(index);
-        // this.drawItemImage(index);
-        this.drawActorDataColOne(index);
-        //this.drawActorDataColTwo(index);
-        //this.drawItemStatus(index);
+        this.drawActorData(index);
 
     };
     
@@ -155,7 +153,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     /**
      * Draw Actor Name, Status and Battler in Window Menu Status
      */
-    Window_MenuStatus.prototype.drawActorDataColOne = function(index) {
+    Window_MenuStatus.prototype.drawActorData = function(index) {
         var actor = $gameParty.members()[index];
         var rect = this.itemRectForText(index);
 
@@ -163,11 +161,12 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         this.resetTextColor();
         this.drawText(actor._name, rect.x, rect.y, 130, 'center' );
         this.drawActorIcons(actor, rect.x, rect.y + 30, 130 );
-        
+
         // draw actor battle sprite
         var battlerSprite = ImageManager.loadSvActor(actor._battlerName);
         // this_frames and this._counter are updated in every window refresh.
         this.contents.blt(battlerSprite, this._frames[this._counter], 0, 65, 65, rect.x + 40, rect.y + 50);
+        this.drawVertLine(rect.x + 145, rect.y, rect.height, 30);
         
         // draw actor class.
         this.setFontSize(22);
@@ -180,18 +179,27 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         // draw actor Mp numbers and gauge.
         this.drawActorMp(actor, rect.x + 160, rect.y + 75, 180);
 
+        this.drawVertLine(rect.x + 370, rect.y, rect.height, 30);
+
         // draw actor Lv text and number.
         this.drawActorLevel(actor, rect.x + 398, rect.y + 29 );
 
         // draw actor Exp. gauge.
         this.drawActorExpGauge(actor, rect.x + 400, rect.y + 75, 150);
-
-        
     }
 
     /**
-     * Calculate actor Exp Rate
+     * Draw vertical line
      */
+    Window_MenuStatus.prototype.drawVertLine = function(x, y, height, cutBorders) {
+        var cutBorders = cutBorders || 0;
+        var height = height || this.contentsHeight();
+        height = (cutBorders) ? height - cutBorders : height;
+
+        this.contents.paintOpacity = 48;
+        this.contents.fillRect(x, y, 2, height, this.normalColor());
+        this.contents.paintOpacity = 255;
+    };
     
 
     /**
@@ -223,23 +231,12 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var totalExpRequired = actor.expForLevel(actorNextLevel) - actor.expForLevel(actor._level);
         var currentExp = totalExpRequired - actor.nextRequiredExp();
 
-        /*
-        console.log( color1 );
-        console.log( color2 );
-        console.log( currentExp );
-        console.log( totalExpRequired );
-        */
-
         this.drawGauge(x, y, width, actorExpRate, color1, color2);
         this.changeTextColor(this.systemColor());
         this.setFontSize(fontSize);
         this.drawText(TextManager.expA, x, y, 44);
         this.resetFontSettings();
-        /*
-        this.drawCurrentAndMaxExp(currentExp, totalExpRequired, x, y, width,
-                               this.hpColor(actor), this.normalColor());
-        */
-       this.drawCurrentAndMax(currentExp, totalExpRequired, x, y, width, this.hpColor(actor), this.normalColor(), fontSize);
+        this.drawCurrentAndMax(currentExp, totalExpRequired, x, y, width, this.hpColor(actor), this.normalColor(), fontSize, true);
     };
 
 
@@ -247,13 +244,14 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
      * Remove condition to draw current Vit / max Vit in Status Window.
      * Used to draw current / max for both Vit and Mp
      */
-    Window_MenuStatus.prototype.drawCurrentAndMax = function(current, max, x, y, width, color1, color2, fontSize) {
+    Window_MenuStatus.prototype.drawCurrentAndMax = function(current, max, x, y, width, color1, color2, fontSize, isExp) {
         /**
          * Light ajust to y position.
          * Done here to avoid extend custom drawHpGauge
          * method to just change 1 pixel.
          */
         y--;
+        var isExp = isExp || false;                 // exp requires some extra logic due to position and font size.
         var fontSize = fontSize || 20;
         var maxString = max.toString();
         var currentString = max.toString();
@@ -261,15 +259,35 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var slashWidth = this.textWidth('/');
         var currentValueWidth = this.textWidth(currentString);
         var maxValueWidth = this.textWidth(maxString);
+        var topToAjust = ( isExp ) ? 5 : 4;        // exp can go over 9999.
+
+        if ( isExp ) {
+            var base = 19;
+        }
 
         // calculate x values.
         var xMaxValue = x + width - labelWidth;
 
         /**
-         * Reajust x position for <= 999
+         * Reajust x position for maximun digits to lower
          */
-        if ( maxString.length <= 3 ) {
-            xMaxValue = xMaxValue + ( ( 4 - maxString.length ) * 10);
+        if ( maxString.length <= ( topToAjust - 1 ) ) {
+            xMaxValue = xMaxValue + ( ( topToAjust - maxString.length ) * 10);
+        }
+
+        /**
+         * Values above are set for Window
+         * Menu Status FontSize 20 or above
+         * Reajust values for exp gauge (which uses
+         * lower font size)
+         * 
+         * TODO : Replace for loop by algorithm.
+         */
+        if ( isExp ) {
+            for (var i = 0; i <= ( maxString.length - 2); i++ ) {
+                base = base - 3;
+            }
+            xMaxValue = xMaxValue - ( topToAjust + base); 
         }
 
         var xSlashValue = xMaxValue - slashWidth;
@@ -279,16 +297,6 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
          * x positon.
          */
         var xCurrentValue = ( xSlashValue - currentValueWidth ) - 3;
-
-        /**
-         * Values above are set for Window
-         * Menu Status FontSize 20 or above
-         * Reajust values for exp gauge (which uses
-         * lower font size)
-         */
-        if ( fontSize < 20 ) {
-            xMaxValue = xMaxValue - 5;
-        }
         
         
         this.setFontSize(fontSize);
@@ -328,7 +336,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         this.drawText(TextManager.levelA, x, y + 4.6, 48);
         this.resetTextColor();
         this.setFontSize(60);
-        this.drawText(actor.level, x + 50, y, 46, 'left');
+        this.drawText(actor.level, x + 50, y, 46, 'right');
         this.resetFontSettings();
     };
     
@@ -431,7 +439,6 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     };
 
     Window_MapName_Menu.prototype.windowWidth = function() {
-        // TODO: Set windwoWith based on text displayed.
         return 240;
         //return this.contents.measureTextWidth($dataMap.displayName);
     };
@@ -453,7 +460,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
      */
     Window_MapName_Menu.prototype.drawCurrentMapName = function(x, y, width) {
         this.resetTextColor();
-        this.drawText( $dataMap.displayName, x, y, width );
+        this.drawText($dataMap.displayName, x, y, width, 'center');
     }
 
     /**
@@ -472,7 +479,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     // The window for current Commands in the Main Menu.
     //-----------------------------------------------------------------------------
     Scene_Menu.prototype.createCommandWindow = function() {
-        this._commandWindow = new Window_MenuCommand(0, 0);
+        this._commandWindow = new Window_MainMenuCommand(0, 0);
         this._commandWindow.setHandler('item',      this.commandItem.bind(this));
         this._commandWindow.setHandler('skill',     this.commandPersonal.bind(this));
         this._commandWindow.setHandler('equip',     this.commandPersonal.bind(this));
@@ -486,9 +493,57 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     };
 
     /**
+     * Window MainMenuCommand has to be prototype linked
+     * to Window_MenuCommnad. Changes have to remain only
+     * to commands displayed on the Main Menu Screen
+     */
+    function Window_MainMenuCommand() {
+        this.initialize.apply(this, arguments);
+    }
+
+    Window_MainMenuCommand.prototype = Object.create(Window_MenuCommand.prototype);
+    Window_MainMenuCommand.prototype.constructor = Window_MainMenuCommand;
+
+    Window_MainMenuCommand.prototype.initialize = function(x, y) {
+        var self = this;
+        this._iconSprite = this.getIconSpriteSheet();
+
+        /**
+         * Load spreadsheet into cache and refresh window
+         * once is loaded.
+         */
+        
+        Window_MenuCommand.prototype.initialize.call(this, x, y);
+        this._iconSprite.addLoadListener(function() {
+            this.refresh();
+        }.bind(this));
+    };
+
+
+    /**
+     * Refresh metho for Menu Command Window
+     */
+    Window_MainMenuCommand.prototype.refresh = function() { 
+        this.clearCommandList();
+        this.makeCommandList();
+        this.createContents();
+        Window_Selectable.prototype.refresh.call(this);
+    };
+
+    /**
+     * Get IconSet Bitmap object to draw icons on
+     * commmand menu items
+     * 
+     * @return {Bitmap}
+     */
+    Window_MainMenuCommand.prototype.getIconSpriteSheet = function() {
+        return ImageManager.loadSystem('IconSetOld');
+    }
+
+    /**
      * Added function to add Quests to Main Menu.
      */
-    Window_MenuCommand.prototype.makeCommandList = function() {
+    Window_MainMenuCommand.prototype.makeCommandList = function() {
         this.addMainCommands();
         this.addFormationCommand();
         this.addOriginalCommands();
@@ -502,7 +557,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
      * Set command Equip before skills.
      * Add Limits Command
      */
-    Window_MenuCommand.prototype.addMainCommands = function() {
+    Window_MainMenuCommand.prototype.addMainCommands = function() {
         var enabled = this.areMainCommandsEnabled();
         if (this.needsCommand('item')) {
             this.addCommand(TextManager.item, 'item', enabled);
@@ -530,8 +585,46 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
     /**
      * Add quest command to Main menu
      */
-    Window_MenuCommand.prototype.addQuestCommand = function() {
+    Window_MainMenuCommand.prototype.addQuestCommand = function() {
         this.addCommand('Misiones', 'quest', true);
     }
+
+    /**
+     * Add extra padding on commands on the left to draw
+     * icon for menu commands.
+     * Add function to draw item.
+     */
+    Window_MainMenuCommand.prototype.drawItem = function(index) {
+        var rect = this.itemRectForText(index);
+        var align = this.itemTextAlign();
+        this.drawCommandIconSprite(rect.x, rect.y, this.commandName(index));
+        this.resetTextColor();
+        this.changePaintOpacity(this.isCommandEnabled(index));
+        this.drawText(this.commandName(index), rect.x + 40, rect.y, rect.width, align);
+    };
+
+    /**
+     * Draws command icon sprite
+     * 
+     * @param {string} commandName 
+     * @return void
+     */
+    Window_MainMenuCommand.prototype.drawCommandIconSprite = function(x, y, commandName) {
+        var width = 23;
+        var height = 22;
+        var alignY = 6;
+        var alignX = 2;
+        switch(commandName) {
+            case 'Objetos' :
+                this.contents.blt(this._iconSprite, 0, 218, width, height, x + alignX, y + alignY, width + 3, height + 3 );
+                break;
+            default:
+                break;
+        }
+    }
+    
+    Window_MainMenuCommand.prototype.itemTextAlign = function() {
+        return 'left';
+    };
 
  })();
