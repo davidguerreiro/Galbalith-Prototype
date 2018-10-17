@@ -23,7 +23,7 @@
         this.createCommandWindow();
         this.createGoldWindow();
         this.createMapNameWindow();
-        this.createStatusWindow();
+        this.createStatusWindow(this);
 
         this._statusWindow.x = 0;
 
@@ -85,26 +85,43 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var width = this.windowWidth();
         var height = this.windowHeight();
         var self = this;
-        this._frames = [130, 65, 0];
-        this._counter = 0;
+
+        // Menu animation variables
+        this.menuAnimations = this.setPartyAnimations();
+        this.counter = 0;
         Window_Selectable.prototype.initialize.call(this, x, y, width, height);
         this._formationMode = false;
         this._pendingIndex = -1;
 
         // frames used to animate battles in the main menu.
         this.refresh();
-        
+ 
         // set interval to animate actors in Main Menu.
-        setInterval( function() {               
-            if ( self._counter == 2 ) {
-                self._frames = self._frames.reverse();
-                self._counter = 0;
+        this._animateMenuStatusChar = setInterval( function() {
+            if ( self.counter == 2 ) {
+                for(var i = 0; i < self.menuAnimations.length; i++) {
+                    self.menuAnimations[i].x = self.menuAnimations[i].x.reverse();
+                }
+                //self.frames.x = self.frames.x.reverse();
+                self.counter = 0;
             }
             self.refresh();
-            self._counter++;
-        }, 175);    
+            self.counter++;
+        }, 175);
         
     };
+
+    /**
+     * Remove setIntervals if the menu has been closed
+     * and the player is already performing actions.
+     */
+    Window_MenuStatus.prototype.refresh = function() {
+        Window_Selectable.prototype.refresh.call(this);
+
+        if ( ! $gamePlayer.canMove() ) {
+            clearInterval(this._animateMenuStatusChar);
+        }
+    }
 
     /**
      * Create Status Window
@@ -114,6 +131,78 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         this._statusWindow.reserveFaceImages();
         this.addWindow(this._statusWindow);
     };
+
+    /**
+     * Set animation frames for all party members
+     * Animations vary depending of state, so
+     * each party member has a different set
+     * of frames array to loop when animate
+     * 
+     * @return {array} animations
+     */
+    Window_MenuStatus.prototype.setPartyAnimations = function() {
+        var members = $gameParty.members();
+        var stateAnimation = 'normal';
+        var animations = [];
+
+        for( var i = 0; i < members.length; i++ ) {
+            if (members[i]._hp <= 800) {
+                stateAnimation = 'death';
+                this.menuSpriteHeight = 60;
+            }
+            
+            if (members[i]._states.length >= 1) {
+                stateAnimation = 'status_condition';
+            }   
+            animations[i] = this.getAnimationFrames(stateAnimation);
+        }
+        
+        return animations;
+    }
+
+    /**
+     * Get MenuStatus Animations frames
+     * 
+     * @param {string} animation
+     * @return {object} frames
+     */
+    Window_MenuStatus.prototype.getAnimationFrames = function(animation) {
+        var animation = animation || 'normal';
+        var basicWidthHeight = 65;
+        var frames = {
+            x: [],
+            y: [],
+        };
+
+        switch(animation) {
+            case 'normal' :
+                frames.x = [130, 65, 0];
+                frames.y = [0, 0, 0];
+                frames.width = basicWidthHeight;
+                frames.height = basicWidthHeight;
+                break;
+            case 'status_condition':
+                frames.x = [390, 455, 390];
+                frames.y = [130, 130, 130];
+                frames.width = basicWidthHeight;
+                frames.height = basicWidthHeight;
+                break
+            case 'death' :
+                frames.x = [383, 383, 383];
+                frames.y = [324, 324, 324];
+                frames.width = basicWidthHeight;
+                frames.height = 60;
+                break;
+            default:
+                frames.x = [130, 65, 0];
+                frames.y = [0, 0, 0];
+                frames.width = basicWidthHeight;
+                frames.height = basicWidthHeight;
+                break
+        }
+        
+        return frames;
+    }
 
     /**
      * Set Status window height according to party members.
@@ -165,7 +254,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         // draw actor battle sprite
         var battlerSprite = ImageManager.loadSvActor(actor._battlerName);
         // this_frames and this._counter are updated in every window refresh.
-        this.contents.blt(battlerSprite, this._frames[this._counter], 0, 65, 65, rect.x + 40, rect.y + 50);
+        this.contents.blt(battlerSprite, this.menuAnimations[index].x[this.counter], this.menuAnimations[index].y[this.counter], this.menuAnimations[index].width, this.menuAnimations[index].height, rect.x + 40, rect.y + 50);
         this.drawVertLine(rect.x + 145, rect.y, rect.height, 30);
         
         // draw actor class.
@@ -195,6 +284,11 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var cutBorders = cutBorders || 0;
         var height = height || this.contentsHeight();
         height = (cutBorders) ? height - cutBorders : height;
+        
+        // add extra height when there is only 1 party member.
+        if ( $gameParty.members().length <= 1 ) {
+            height = height + 22;
+        }
 
         this.contents.paintOpacity = 48;
         this.contents.fillRect(x, y, 2, height, this.normalColor());
@@ -288,6 +382,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
                 base = base - 3;
             }
             xMaxValue = xMaxValue - ( topToAjust + base); 
+            y = y + 3;
         }
 
         var xSlashValue = xMaxValue - slashWidth;
