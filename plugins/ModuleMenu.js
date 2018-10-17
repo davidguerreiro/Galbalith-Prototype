@@ -146,7 +146,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var animations = [];
 
         for( var i = 0; i < members.length; i++ ) {
-            if (members[i]._hp <= 800) {
+            if (members[i]._hp <= 0) {
                 stateAnimation = 'death';
                 this.menuSpriteHeight = 60;
             }
