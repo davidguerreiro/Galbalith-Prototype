@@ -102,7 +102,6 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
                 for(var i = 0; i < self.menuAnimations.length; i++) {
                     self.menuAnimations[i].x = self.menuAnimations[i].x.reverse();
                 }
-                //self.frames.x = self.frames.x.reverse();
                 self.counter = 0;
             }
             self.refresh();
