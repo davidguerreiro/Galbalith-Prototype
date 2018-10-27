@@ -749,7 +749,7 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
                 this.contents.blt(this._iconSprite, 97, 194, width, height, x + alignX, y + alignY, width + 7, height + 3 );
                 break;
             case 'Misiones':
-                this.contents.blt(this._iconSprite, 145, 218, width, height, x + alignX, y + alignY, width + 3, height + 3 );
+                this.contents.blt(this._iconSprite, 143, 217, width, height, x + alignX, y + alignY, width + 3, height + 3 );
                 break;
             case 'Opciones':
                 this.contents.blt(this._iconSprite, 145, 194, width, height, x + alignX, y + alignY, width + 7, height + 3 );
