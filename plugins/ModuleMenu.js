@@ -145,17 +145,23 @@ Window_Base.prototype.calculateActorExpRate = function(actor) {
         var animations = [];
 
         for( var i = 0; i < members.length; i++ ) {
+            // init for each member.
+            stateAnimation = 'normal';
+
+
+            // death animation.
             if (members[i]._hp <= 0) {
                 stateAnimation = 'death';
                 this.menuSpriteHeight = 60;
             }
             
+            // status condition animation.
             if (members[i]._states.length >= 1) {
                 stateAnimation = 'status_condition';
-            }   
-            animations[i] = this.getAnimationFrames(stateAnimation);
+            }
+            
+            animations.push(this.getAnimationFrames(stateAnimation));
         }
-        
         return animations;
     }
 
