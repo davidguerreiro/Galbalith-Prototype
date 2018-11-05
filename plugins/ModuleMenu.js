@@ -15,6 +15,8 @@
  (function() {
     var _Scene_Menu_Base = Scene_MenuBase.prototype.create;
 
+    // console.log(Scene_Magic);
+
     /**
      * Init Menu and set windows.
      */
