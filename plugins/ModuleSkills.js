@@ -81,6 +81,7 @@
         var height = this.windowHeight();
         console.log( width );
         console.log( height ); 
+        console.log( heigh );
         Window_Selectable.prototype.initialize.call(this, x, y, width, height);
         this.refresh();
     }
